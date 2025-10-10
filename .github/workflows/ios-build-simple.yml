@@ -1,11 +1,11 @@
-name: Build iOS App
+name: Build iOS App (Simple)
 
 on:
   push:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,7 +23,6 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          npm install -g react-native-cli
           
       - name: Install CocoaPods
         run: |
@@ -32,28 +31,30 @@ jobs:
       - name: Install iOS dependencies
         run: |
           cd ios
-          pod install --repo-update
+          pod install
           
-      - name: Build iOS app
+      - name: Build iOS app (Debug)
         run: |
           cd ios
           xcodebuild -workspace MeshtasticCompass.xcworkspace \
             -scheme MeshtasticCompass \
-            -configuration Release \
+            -configuration Debug \
             -destination generic/platform=iOS \
             -archivePath MeshtasticCompass.xcarchive \
             archive \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
             
-      - name: Export IPA
+      - name: Create IPA manually
         run: |
-          xcodebuild -exportArchive \
-            -archivePath ios/MeshtasticCompass.xcarchive \
-            -exportPath ios/export \
-            -exportOptionsPlist ios/ExportOptions.plist \
-            -allowProvisioningUpdates
-            
+          cd ios
+          mkdir -p export
+          cd MeshtasticCompass.xcarchive/Products/Applications
+          cp -r MeshtasticCompass.app ../../export/
+          cd ../../export
+          zip -r MeshtasticCompass.ipa MeshtasticCompass.app
+          
       - name: Upload IPA artifact
         uses: actions/upload-artifact@v4
         with:
